@@ -114,7 +114,7 @@ def linear_least_squares_fit_with_stats(xdata: np.ndarray,
     make_2d_matrix = _line_fitting_make_rhs_matrix_from_xdata
     matrix = make_2d_matrix(xdata)
     fit_ans = np.linalg.lstsq(matrix, ydata)
-    
+
     x_mean = np.mean(xdata)
     y_mean = np.mean(ydata)
 
