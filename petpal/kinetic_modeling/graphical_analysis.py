@@ -115,14 +115,17 @@ def linear_least_squares_fit_with_stats(xdata: np.ndarray,
     matrix = make_2d_matrix(xdata)
     fit_ans = np.linalg.lstsq(matrix, ydata)
     
+    x_mean = np.mean(xdata)
+    y_mean = np.mean(ydata)
+
     ss_res = fit_ans[1][0]
-    ss_tot = np.sum((np.mean(ydata) - ydata) ** 2.)
+    ss_tot = np.sum((y_mean - ydata) ** 2.)
 
     n = len(xdata)
 
-    sum_square_xdiff = np.sum(xdata**2)-n*np.mean(xdata)**2
-    sum_square_ydiff = np.sum(ydata**2)-n*np.mean(ydata)**2
-    sum_square_xydiff = np.sum(xdata*ydata)-n*np.mean(ydata)*np.mean(xdata)
+    sum_square_xdiff = np.sum(xdata**2)-n*x_mean**2
+    sum_square_ydiff = np.sum(ydata**2)-n*y_mean**2
+    sum_square_xydiff = np.sum(xdata*ydata)-n*y_mean*x_mean
 
     s = np.sqrt((sum_square_ydiff-sum_square_xydiff**2/sum_square_xdiff)/(n-2))
 
