@@ -12,8 +12,7 @@ import ants
 def suvr(input_image_path: str,
          out_image_path: str | None,
          segmentation_image_path: str,
-         ref_region: int,
-         verbose: bool=False) -> ants.ANTsImage:
+         ref_region: int) -> ants.ANTsImage:
     """
     Computes an ``SUVR`` (Standard Uptake Value Ratio) by taking the average of
     an input image within a reference region, and dividing the input image by
@@ -27,7 +26,6 @@ def suvr(input_image_path: str,
             to compute average uptake value in the reference region.
         ref_region (int): Region number mapping to the reference region in the
             segmentation image.
-        verbose (bool): Set to ``True`` to output processing information. Default is False.
 
     Returns:
         ants.ANTsImage: SUVR parametric image
@@ -45,7 +43,7 @@ def suvr(input_image_path: str,
     ref_region_avg = extract_mean_roi_tac_from_nifti_using_segmentation(input_image_4d_numpy=pet_arr,
                                                                         segmentation_image_numpy=segmentation_arr,
                                                                         region=ref_region,
-                                                                        verbose=verbose)
+                                                                        verbose=False)
 
     suvr_arr = pet_arr / ref_region_avg[0]
 

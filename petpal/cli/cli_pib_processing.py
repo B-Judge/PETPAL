@@ -98,8 +98,7 @@ def main():
                                  input_image_path='',
                                  output_image_path='',
                                  ref_region=ref_region_label,
-                                 segmentation_image_path=seg_path,
-                                 verbose=False)
+                                 segmentation_image_path=seg_path)
 
     # Add steps to kinetic modeling container
     kinetic_modeling_container.add_step(step=suvr_step)
