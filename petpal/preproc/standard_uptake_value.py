@@ -3,11 +3,25 @@ Module for functions calculating standard uptake value (SUV) and related measure
 uptake value ratio (SUVR).
 """
 from ..utils.stats import mean_value_in_region
+from .image_operations_4d import weighted_series_sum
 import numpy as np
 from petpal.utils import image_io
 
 
 import ants
+
+def suv(input_image_path: str,
+        out_image_path: str | None,
+        weight: float,
+        dose: float):
+    """Compute standard uptake value (SUV) over a pet image. Calculate the weighted image sum
+    then divide by the dose and weight of the participant."""
+    wss_arr = weighted_series_sum(input_image_4d_path=input_image_path,
+                                  out_image_path=out_image_path,
+                                  verbose=False,
+                                  start_time=0,
+                                  end_time=-1,
+                                  half_life=1)
 
 
 def suvr(input_image_path: str,
