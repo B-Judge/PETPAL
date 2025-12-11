@@ -30,25 +30,25 @@ def suvr(input_image_path: str,
     Returns:
         ants.ANTsImage: SUVR parametric image
     """
-    pet_img = ants.image_read(filename=input_image_path)
-    pet_arr = pet_img.numpy()
+    suv_img = ants.image_read(filename=input_image_path)
+    suv_arr = suv_img.numpy()
     segmentation_img = ants.image_read(filename=segmentation_image_path,
                                         pixeltype='unsigned int')
     segmentation_arr = segmentation_img.numpy()
 
-    if len(pet_arr.shape)!=3:
+    if len(suv_arr.shape)!=3:
         raise ValueError("SUVR input image is not 3D. If your image is dynamic, try running 'weighted_series_sum'"
                          " first.")
 
-    ref_region_avg = extract_mean_roi_tac_from_nifti_using_segmentation(input_image_4d_numpy=pet_arr,
+    ref_region_avg = extract_mean_roi_tac_from_nifti_using_segmentation(input_image_4d_numpy=suv_arr,
                                                                         segmentation_image_numpy=segmentation_arr,
                                                                         region=ref_region,
                                                                         verbose=False)
 
-    suvr_arr = pet_arr / ref_region_avg[0]
+    suvr_arr = suv_arr / ref_region_avg[0]
 
     out_img = ants.from_numpy_like(data=suvr_arr,
-                                     image=pet_img)
+                                     image=suv_img)
 
     if out_image_path is not None:
         ants.image_write(image=out_img,
