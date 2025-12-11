@@ -5,6 +5,18 @@ import ants
 
 from ..meta.label_maps import LabelMapLoader
 from .useful_functions import check_physical_space_for_ants_image_pair
+from ..preproc.segmentation_tools import combine_regions_as_mask
+
+def mean_value_in_region(input_img: ants.ANTsImage,
+                         seg_img: ants.ANTsImage,
+                         mapping: int | list[int]):
+    """Calculate the mean value in a 3D PET image over a region based on one or more integer
+    mappings corresponding to regions in a segmentation image."""
+    region_mask = combine_regions_as_mask(segmentation_img=seg_img,
+                                          label=mapping)
+    pet_masked_arr = input_img[seg_img.nonzero()]
+    return pet_masked_arr.mean()
+
 
 class RegionalStats:
     """Run statistics on each region in a parametric 3D PET kinetic model or other image.
