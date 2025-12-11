@@ -52,19 +52,19 @@ def wss_2(input_image_path: str,
         frame_duration_adjusted = frame_duration[calc_first_frame:calc_last_frame]
         decay_correction_adjusted = decay_correction[calc_first_frame:calc_last_frame]
 
-    image_weighted_sum = weighted_sum_computation(frame_duration=frame_duration_adjusted,
-                                                  half_life=half_life,
-                                                  pet_img=pet_series_adjusted,
-                                                  frame_start=frame_start_adjusted,
-                                                  decay_correction=decay_correction_adjusted)
+    weighted_sum_arr = weighted_sum_computation(frame_duration=frame_duration_adjusted,
+                                                half_life=half_life,
+                                                pet_img=pet_series_adjusted,
+                                                frame_start=frame_start_adjusted,
+                                                decay_correction=decay_correction_adjusted)
+    weighted_sum_img = ants.from_numpy_like(weighted_sum_arr,gen_3d_img_from_timeseries(pet_img))
 
     if output_image_path is not None:
-        pet_sum_image = ants.from_numpy_like(image_weighted_sum,gen_3d_img_from_timeseries(pet_img))
-        ants.image_write(pet_sum_image, output_image_path)
+        ants.image_write(weighted_sum_img, output_image_path)
         image_io.safe_copy_meta(input_image_path=input_image_path,
                                 output_image_path=output_image_path)
 
-    return image_weighted_sum
+    return weighted_sum_img
 
 
 def suv(input_image_path: str,
@@ -72,13 +72,11 @@ def suv(input_image_path: str,
         weight: float,
         dose: float):
     """Compute standard uptake value (SUV) over a pet image. Calculate the weighted image sum
-    then divide by the dose and weight of the participant."""
-    wss_arr = weighted_series_sum(input_image_path=input_image_path,
-                                  output_image_path=output_image_path,
-                                  verbose=False,
-                                  start_time=0,
-                                  end_time=-1,
-                                  half_life=1)
+    then divide by the dose and multiplying by the weight of the participant."""
+    wss_img = wss_2(input_image_path=input_image_path,
+                    output_image_path=None)
+    suv_img = wss_img / dose * weight
+    return suv_img
 
 
 def suvr(input_image_path: str,
