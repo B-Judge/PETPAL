@@ -2,7 +2,8 @@
 Module for functions calculating standard uptake value (SUV) and related measures, such as standard
 uptake value ratio (SUVR).
 """
-from petpal.preproc.image_operations_4d import extract_mean_roi_tac_from_nifti_using_segmentation
+from ..utils.stats import mean_value_in_region
+import numpy as np
 from petpal.utils import image_io
 
 
@@ -12,7 +13,7 @@ import ants
 def suvr(input_image_path: str,
          out_image_path: str | None,
          segmentation_image_path: str,
-         ref_region: int) -> ants.ANTsImage:
+         ref_region: int | list[int]) -> ants.ANTsImage:
     """
     Computes an ``SUVR`` (Standard Uptake Value Ratio) by taking the average of
     an input image within a reference region, and dividing the input image by
@@ -24,8 +25,8 @@ def suvr(input_image_path: str,
         out_image_path (str): Path to output image file which is written to. If None, no output is written.
         segmentation_image_path (str): Path to segmentation image, which we use
             to compute average uptake value in the reference region.
-        ref_region (int): Region number mapping to the reference region in the
-            segmentation image.
+        ref_region (int): Region or list of region mappings over which to compute average SUV. If a
+            list is provided, combines all regions in the list as one reference region.
 
     Returns:
         ants.ANTsImage: SUVR parametric image
@@ -40,15 +41,14 @@ def suvr(input_image_path: str,
         raise ValueError("SUVR input image is not 3D. If your image is dynamic, try running 'weighted_series_sum'"
                          " first.")
 
-    ref_region_avg = extract_mean_roi_tac_from_nifti_using_segmentation(input_image_4d_numpy=suv_arr,
-                                                                        segmentation_image_numpy=segmentation_arr,
-                                                                        region=ref_region,
-                                                                        verbose=False)
+    ref_region_avg = mean_value_in_region(input_img=suv_img,
+                                          seg_img=segmentation_img,
+                                          mapping=ref_region)
 
-    suvr_arr = suv_arr / ref_region_avg[0]
+    suvr_arr = suv_arr / ref_region_avg
 
     out_img = ants.from_numpy_like(data=suvr_arr,
-                                     image=suv_img)
+                                   image=suv_img)
 
     if out_image_path is not None:
         ants.image_write(image=out_img,
