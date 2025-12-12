@@ -200,7 +200,7 @@ def vat_protocol(subjstring: str,
     wss_file_path = vat_bids_filepath(suffix='pet',folder='pet',space='mpr',desc='WSS')
     suvr_file_path = vat_bids_filepath(suffix='pet',folder='pet',space='mpr',desc='SUVR')
     if 'suvr' not in skip:
-        useful_functions.weighted_series_sum(input_image_4d_path=pet_reg_anat_file,
+        useful_functions.weighted_series_sum(input_image_path=pet_reg_anat_file,
                                              half_life=half_life,
                                              verbose=True,
                                              start_time=suvr_start,

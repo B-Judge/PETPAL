@@ -89,7 +89,7 @@ def build_label_map(region_names: list[str]):
     return abbreviated_names
 
 
-def weighted_series_sum(input_image_4d_path: str,
+def weighted_series_sum(input_image_path: str,
                         out_image_path: str,
                         half_life: float,
                         verbose: bool=False,
@@ -125,7 +125,7 @@ def weighted_series_sum(input_image_4d_path: str,
     # TODO: Determine half_life from .json rather than passing as argument.
 
     Args:
-        input_image_4d_path (str): Path to a .nii or .nii.gz file containing a 4D
+        input_image_path (str): Path to a .nii or .nii.gz file containing a 4D
             PET image on which the weighted sum is calculated. Assume a metadata
             file exists with the same path and file name, but with extension .json,
             and follows BIDS standard.
@@ -148,8 +148,8 @@ def weighted_series_sum(input_image_4d_path: str,
     """
     if half_life <= 0:
         raise ValueError('(ImageOps4d): Radioisotope half life is zero or negative.')
-    pet_meta = image_io.load_metadata_for_nifti_with_same_filename(input_image_4d_path)
-    pet_image = nibabel.load(input_image_4d_path)
+    pet_meta = image_io.load_metadata_for_nifti_with_same_filename(input_image_path)
+    pet_image = nibabel.load(input_image_path)
     pet_series = pet_image.get_fdata()
     frame_start = pet_meta['FrameTimesStart']
     frame_duration = pet_meta['FrameDuration']
@@ -203,7 +203,7 @@ def weighted_series_sum(input_image_4d_path: str,
         nibabel.save(pet_sum_image, out_image_path)
         if verbose:
             print(f"(ImageOps4d): weighted sum image saved to {out_image_path}")
-        image_io.safe_copy_meta(input_image_path=input_image_4d_path,
+        image_io.safe_copy_meta(input_image_path=input_image_path,
                                 out_image_path=out_image_path)
 
     return image_weighted_sum

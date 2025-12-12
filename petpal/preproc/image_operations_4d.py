@@ -29,8 +29,9 @@ import numpy as np
 from scipy.ndimage import center_of_mass
 
 from ..utils.useful_functions import weighted_series_sum
+from .standard_uptake_value import weighted_sum_for_suv
 from ..utils import image_io, math_lib
-from ..preproc.decay_correction import undo_decay_correction, decay_correct
+from .decay_correction import undo_decay_correction, decay_correct
 
 def stitch_broken_scans(input_image_path: str,
                         output_image_path: str,
@@ -219,8 +220,7 @@ def rescale_image(input_image: ants.core.ANTsImage, rescale_constant: float, op:
 
 
 def determine_motion_target(motion_target_option: str | tuple | list,
-                            input_image_4d_path: str = None,
-                            half_life: float = None) -> str:
+                            input_image_path: str = None) -> str:
     """
     Produce a motion target given the ``motion_target_option`` from a method
     running registrations on PET, i.e. :meth:`motion_correction` or
@@ -245,13 +245,9 @@ def determine_motion_target(motion_target_option: str | tuple | list,
         motion_target_option (str | tuple | list): Determines how the method behaves,
             according to the above description. Can be a file, a method
             ('weighted_series_sum' or 'mean_image'), or a tuple range e.g. (0,600).
-        input_image_4d_path (str): Path to the PET image. This is intended to
+        input_image_path (str): Path to the PET image. This is intended to
             be supplied by the parent method employing this function. Default
             value None.
-        half_life (float): Half life of the radiotracer used in the image
-            located at ``input_image_4d_path``. Only used if a calculation is
-            performed.
-
     Returns:
         out_image_file (str): File to use as a target to compute
             transformations on.
@@ -261,24 +257,19 @@ def determine_motion_target(motion_target_option: str | tuple | list,
         ``half_life`` is not specifiedwhen ``motion_target_option`` is not 'mean_image'
         TypeError: If start and end time are incompatible with ``float`` type.
     """
-    if motion_target_option != 'mean_image' and half_life is None:
-        raise ValueError('half_life must be specified if not using "mean_image" for motion_target_option')
-
     if isinstance(motion_target_option, str):
         if os.path.exists(motion_target_option):
             return motion_target_option
 
         if motion_target_option == 'weighted_series_sum':
             out_image_file = tempfile.mkstemp(suffix='_wss.nii.gz')[1]
-            weighted_series_sum(input_image_4d_path=input_image_4d_path,
-                                out_image_path=out_image_file,
-                                half_life=half_life,
-                                verbose=False)
+            weighted_sum_for_suv(input_image_path=input_image_path,
+                                output_image_path=out_image_file)
             return out_image_file
 
         if motion_target_option == 'mean_image':
             out_image_file = tempfile.mkstemp(suffix='_mean.nii.gz')[1]
-            input_img = ants.image_read(input_image_4d_path)
+            input_img = ants.image_read(input_image_path)
             mean_img = get_average_of_timeseries(input_image=input_img)
             ants.image_write(image=mean_img,filename=out_image_file)
             return out_image_file
@@ -299,31 +290,28 @@ def determine_motion_target(motion_target_option: str | tuple | list,
                             f"{start_time} and {end_time}.") from exc
 
         out_image_file = tempfile.mkstemp(suffix='_wss.nii.gz')[1]
-        weighted_series_sum(input_image_4d_path=input_image_4d_path,
-                            out_image_path=out_image_file,
-                            half_life=half_life,
-                            verbose=False,
-                            start_time=float(start_time),
-                            end_time=float(end_time))
+        weighted_sum_for_suv(input_image_path=input_image_path,
+                                output_image_path=out_image_file,
+                                start_time=start_time,
+                                end_time=end_time)
 
         return out_image_file
 
     raise ValueError('motion_target_option did not match str or tuple type.')
 
 
-def brain_mask(input_image_4d_path: str,
+def brain_mask(input_image_path: str,
                out_image_path: str,
                atlas_image_path: str,
                atlas_mask_path: str,
-               motion_target_option='mean_image',
-               half_life: float=None):
+               motion_target_option='mean_image'):
     """
     Create a brain mask for a PET image. Create target PET image, which is then warped to a
     provided anatomical atlas. The transformation to atlas space is then applied to transform a
     provided mask in atlas space into PET space. This mask can then by used in various operations.
 
     Args:
-        input_image_4d_path (str): Path to input 4D PET image.
+        input_image_path (str): Path to input 4D PET image.
         out_image_path (str): Path to which brain mask in PET space is written.
         atlas_image_path (str): Path to anatomical atlas image.
         atlas_mask_path (str): Path to brain mask in atlas space.
@@ -336,11 +324,9 @@ def brain_mask(input_image_4d_path: str,
     """
     atlas = ants.image_read(atlas_image_path)
     atlas_mask = ants.image_read(atlas_mask_path)
-    pet_ref = ants.image_read(determine_motion_target(
-        motion_target_option=motion_target_option,
-        input_image_4d_path=input_image_4d_path,
-        half_life=half_life
-    ))
+    motion_target = determine_motion_target(motion_target_option=motion_target_option,
+                                            input_image_path=input_image_path)
+    pet_ref = ants.image_read(motion_target)
     xfm = ants.registration(
         fixed=atlas,
         moving=pet_ref,
@@ -368,7 +354,7 @@ def extract_mean_roi_tac_from_nifti_using_segmentation(input_image_4d_numpy: np.
     regional values. Currently, only the mean over a single region value is implemented.
 
     Args:
-        input_image_4d_path (str): Path to a .nii or .nii.gz file containing a 4D
+        input_image_path (str): Path to a .nii or .nii.gz file containing a 4D
             PET image, registered to anatomical space.
         segmentation_image_path (str): Path to a .nii or .nii.gz file containing a 3D segmentation
             image, where integer indices label specific regions. Must have same sampling as PET
@@ -502,7 +488,7 @@ def gauss_blur(input_image_path: str,
     return out_image
 
 
-def roi_tac(input_image_4d_path: str,
+def roi_tac(input_image_path: str,
             roi_image_path: str,
             region: int,
             out_tac_path: str,
@@ -519,9 +505,9 @@ def roi_tac(input_image_4d_path: str,
         raise ValueError("'time_frame_keyword' must be one of "
                          "'FrameReferenceTime' or 'FrameTimesStart'")
 
-    pet_meta = image_io.load_metadata_for_nifti_with_same_filename(input_image_4d_path)
+    pet_meta = image_io.load_metadata_for_nifti_with_same_filename(input_image_path)
     tac_extraction_func = extract_mean_roi_tac_from_nifti_using_segmentation
-    pet_numpy = nibabel.load(input_image_4d_path).get_fdata()
+    pet_numpy = nibabel.load(input_image_path).get_fdata()
     seg_numpy = nibabel.load(roi_image_path).get_fdata()
 
 

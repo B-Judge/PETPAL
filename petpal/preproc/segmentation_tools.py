@@ -203,7 +203,7 @@ def replace_probabilistic_region(segmentation_numpy: np.ndarray,
     return segmentation_numpy
 
 
-def resample_segmentation(input_image_4d_path: str,
+def resample_segmentation(input_image_path: str,
                           segmentation_image_path: str,
                           out_seg_path: str,
                           verbose: bool):
@@ -215,7 +215,7 @@ def resample_segmentation(input_image_4d_path: str,
     PET and ROI data are registered to the same space, but have different resolutions.
 
     Args:
-        input_image_4d_path (str): Path to a .nii or .nii.gz file containing a 4D
+        input_image_path (str): Path to a .nii or .nii.gz file containing a 4D
             PET image, registered to anatomical space, to which the segmentation file is resampled.
         segmentation_image_path (str): Path to a .nii or .nii.gz file containing a 3D segmentation
             image, where integer indices label specific regions.
@@ -223,7 +223,7 @@ def resample_segmentation(input_image_4d_path: str,
             image is written.
         verbose (bool): Set to ``True`` to output processing information.
     """
-    pet_image = nibabel.load(input_image_4d_path)
+    pet_image = nibabel.load(input_image_path)
     seg_image = nibabel.load(segmentation_image_path)
     pet_series = pet_image.get_fdata()
     image_first_frame = pet_series[:, :, :, 0]

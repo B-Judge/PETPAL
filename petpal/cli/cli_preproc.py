@@ -33,7 +33,7 @@ Examples:
 
    .. code-block:: bash
 
-       petpal-preproc register-pet -i /path/to/input_img.nii.gz -o petpal_reg.nii.gz --motion-target 0 600 --anatomical /path/to/anat.nii.gz --half-life 6584
+       petpal-preproc register-pet -i /path/to/input_img.nii.gz -o petpal_reg.nii.gz --motion-target 0 600 --anatomical /path/to/anat.nii.gz
 
 
     * Write regional tacs:
@@ -54,7 +54,7 @@ Examples:
 
    .. code-block:: bash
 
-       petpal-preproc weighted-series-sum -i /path/to/input_img.nii.gz -o petpal_wss.nii.gz --half-life 6584 --start-time 1800 --end-time 7200
+       petpal-preproc weighted-series-sum -i /path/to/input_img.nii.gz -o petpal_wss.nii.gz --start-time 1800 --end-time 7200
 
 
    * SUVR Image:
@@ -109,7 +109,7 @@ Examples:
   - Windowed moco:
     petpal-preproc windowed-motion-corr -i /path/to/input_img.nii.gz -o petpal_moco.nii.gz --window-size 120 --transform-type QuickRigid
   - Register to anatomical:
-    petpal-preproc register-pet -i /path/to/input_img.nii.gz -o petpal_reg.nii.gz --motion-target 0 600 --anatomical /path/to/anat.nii.gz --half-life 6584
+    petpal-preproc register-pet -i /path/to/input_img.nii.gz -o petpal_reg.nii.gz --motion-target 0 600 --anatomical /path/to/anat.nii.gz
   - Write regional tacs:
     petpal-preproc write-tacs -i /path/to/input_img.nii.gz -p sub-001 -o /tmp/petpal_tacs -s /path/to/segmentation.nii.gz -l perlcyno -x
   - Write tacs, deprecated:
@@ -216,9 +216,6 @@ def _generate_args() -> argparse.ArgumentParser:
                             required=True)
     parser_moco.add_argument('--transform-type', required=False,default='Rigid',
                              help='Transformation type (Rigid or Affine).',type=str)
-    parser_moco.add_argument('--half-life', required=False,
-                             help='Half life of radioisotope in seconds.'
-                                  'Required for some motion targets.',type=float)
 
     parser_tac = subparsers.add_parser('write-tacs',
                                        help='Write ROI TACs from 4D PET using segmentation masks.')
@@ -339,8 +336,6 @@ def _generate_args() -> argparse.ArgumentParser:
                             help="Motion target option. Can be an image path, "
                                  "'weighted_series_sum' or a tuple (i.e. '-t 0 600' for first "
                                  "ten minutes).")
-    parser_reg.add_argument('-l', '--half-life', help='Half life of radioisotope in seconds.',
-                            type=float)
 
     parser_suv = subparsers.add_parser('suv',help='Standard Uptake Value (SUV) calculation')
     _add_common_args(parser_suv)
@@ -398,19 +393,17 @@ def main():
                                                     thresh_val=args.thresh_val,
                                                     verbose=True)
         case 'motion_correction':
-            motion_corr.motion_corr(input_image_4d_path=args.input_img,
+            motion_corr.motion_corr(input_image_path=args.input_img,
                                     out_image_path=args.out_img,
                                     motion_target_option=motion_target,
                                     verbose=True,
-                                    type_of_transform=args.transform_type,
-                                    half_life=args.half_life)
+                                    type_of_transform=args.transform_type)
         case 'register_pet':
             register.register_pet(input_reg_image_path=args.input_img,
                                 out_image_path=args.out_img,
                                 reference_image_path=args.anatomical,
                                 motion_target_option=motion_target,
-                                verbose=True,
-                                half_life=args.half_life)
+                                verbose=True)
         case 'write_tacs_old':
             regional_tac_extraction.write_tacs(input_image_path=args.input_img,
                                             out_tac_dir=args.out_tac_dir,
