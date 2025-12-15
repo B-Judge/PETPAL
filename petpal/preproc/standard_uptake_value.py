@@ -84,12 +84,23 @@ def suv(input_image_path: str,
         start_time: float,
         end_time: float):
     """Compute standard uptake value (SUV) over a pet image. Calculate the weighted image sum
-    then divide by the dose and multiplying by the weight of the participant."""
+    then divide by the dose and multiplying by the weight of the participant.
+
+    Args:
+        input_image_path: Path to input PET image.
+        output_image_path: Path to which SUV image is saved.
+        weight: Weight of the participant in kg.
+        dose: Dose injected during the scan in MBq.
+        start_time: Start time for the SUV calculation in seconds.
+        end_time: End time for the SUV calculation in seconds.
+        
+    Returns:
+        suv_img (ants.ANTsImage): The standard uptake value calculated on the input image."""
     wss_img = weighted_sum_for_suv(input_image_path=input_image_path,
                                    output_image_path=None,
                                    start_time=start_time,
                                    end_time=end_time)
-    suv_img = wss_img / dose * weight
+    suv_img = wss_img / (dose*1000) * weight 
 
     if output_image_path is not None:
         ants.image_write(suv_img, output_image_path)
