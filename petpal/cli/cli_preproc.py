@@ -347,7 +347,7 @@ def _generate_args() -> argparse.ArgumentParser:
     parser_suv.add_argument('-d',
                             '--dose',
                             required=True,
-                            help='Dose of radiotracer injected in MBQ/mL',
+                            help='Dose of radiotracer injected in MBq',
                             type=float)
     parser_suv.add_argument('--start-time',
                             required=True,
