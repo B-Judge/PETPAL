@@ -1,6 +1,8 @@
 import numpy as np
 import pytest
 from petpal.utils.scan_timing import calculate_frame_reference_time
+from petpal.preproc.decay_correction import calculate_frame_decay_factor
+
 
 def test_ref_time_no_decay_returns_midpoint():
     durations = np.array([5.0, 10.0])
@@ -49,3 +51,27 @@ def test_ref_time_vectorized_shape_and_broadcast():
     res = calculate_frame_reference_time(durations, starts, half_life)
     assert isinstance(res, np.ndarray)
     assert res.shape == (1,)
+
+
+def test_basic_powers_of_two():
+    half_life = 2.0
+    times = np.array([0.0, half_life, 2 * half_life])
+    out = calculate_frame_decay_factor(times, half_life)
+    expected = np.array([1.0, 2.0, 4.0])
+    np.testing.assert_allclose(out, expected, rtol=1e-12, atol=0)
+
+
+def test_preserves_shape_and_dtype():
+    times = np.array([0.5])
+    out = calculate_frame_decay_factor(times, 1.0)
+    assert isinstance(out, np.ndarray)
+    assert out.shape == times.shape
+    np.testing.assert_allclose(out[0], 2 ** 0.5, rtol=1e-12)
+
+
+def test_negative_time_and_float_half_life():
+    half_life = 1.5
+    times = np.array([-half_life, 0.0, half_life])
+    out = calculate_frame_decay_factor(times, half_life)
+    expected = np.array([0.5, 1.0, 2.0])
+    np.testing.assert_allclose(out, expected, rtol=1e-12, atol=0)
