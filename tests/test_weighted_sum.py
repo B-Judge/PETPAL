@@ -20,7 +20,7 @@ def test_weighted_sum_computation_all_ones_simple():
 
     expected = np.full((2, 2, 2), total_decay)
     out = weighted_sum_computation(pet_series, frame_duration, half_life, frame_start, decay_correction)
-    assert np.allclose(out, expected)
+    np.testing.assert_allclose(out, expected)
 
 def test_weighted_sum_computation_manual_computation():
     # randomized small example, validate against manual numpy computation
@@ -48,4 +48,4 @@ def test_weighted_sum_computation_manual_computation():
     expected = pet_series_sum_scaled * total_decay / image_total_duration
 
     out = weighted_sum_computation(pet_series, frame_duration, half_life, frame_start, decay_correction)
-    assert np.allclose(out, expected)
+    np.testing.assert_allclose(out, expected)

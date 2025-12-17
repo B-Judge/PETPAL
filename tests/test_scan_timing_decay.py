@@ -10,7 +10,7 @@ def test_ref_time_no_decay_returns_midpoint():
     half_life = 1.0e8  # effectively no decay
     res = calculate_frame_reference_time(durations, starts, half_life)
     expected = starts + durations / 2.0
-    assert np.allclose(res, expected, rtol=1e-2, atol=1e-3)
+    np.testing.assert_allclose(res, expected, rtol=1e-2, atol=1e-3)
 
 
 def test_ref_time_fast_decay_concentrates_near_start():
@@ -41,7 +41,7 @@ def test_ref_time_numeric_integration_agrees():
         expected.append(s + delay)
     expected = np.asarray(expected)
 
-    assert np.allclose(res, expected, rtol=1e-3, atol=1e-9)
+    np.testing.assert_allclose(res, expected, rtol=1e-3, atol=1e-9)
 
 
 def test_ref_time_vectorized_shape_and_broadcast():
