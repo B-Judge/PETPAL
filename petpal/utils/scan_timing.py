@@ -267,21 +267,21 @@ def calculate_frame_reference_time(frame_duration: np.ndarray,
                                    half_life: np.ndarray) -> np.ndarray:
     r"""Compute frame reference time as the time at which the average activity occurs.
     
-    Equation comes from the
-    `DICOM standard documentation <https://dicom.innolitics.com/ciods/positron-emission-tomography-image/pet-image/00541300>`_
+    Equation comes from the `DICOM standard documentation
+    <https://dicom.innolitics.com/ciods/positron-emission-tomography-image/pet-image/00541300>`_
 
     :math:`T_{ave}=\frac{1}{\lambda}ln\frac{\lambda T}{1-e^{-\lambda T}}`
 
-    where lambda is the decay constant, :math:`\frac{ln2}{T_{1/2}}`, :math:`T_{1/2}` is the half life,
-    and :math:`T` is the frame duration.
+    where lambda is the decay constant, :math:`\frac{ln2}{T_{1/2}}`, :math:`T_{1/2}` is the half
+    life, and :math:`T` is the frame duration.
 
     Args:
-        frame_duration (np.ndarray): Duratino of each frame in seconds
-        frame_start (np.ndarray): Start time of each frame relative to scan start, in seconds
-        half_life (np.ndarray): Radionuclide half life in seconds
+        frame_duration (np.ndarray): Duration of each frame in seconds.
+        frame_start (np.ndarray): Start time of each frame relative to scan start, in seconds.
+        half_life (np.ndarray): Radionuclide half life in seconds.
 
     Returns: 
-        np.ndarray: Frame reference time for each frame in the scan in seconds
+        np.ndarray: Frame reference time for each frame in the scan in seconds.
     """
     decay_constant = np.log(2)/half_life
     decay_over_frame = decay_constant*frame_duration
