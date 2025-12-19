@@ -1,7 +1,6 @@
 """
 Module to handle timing information of PET scans.
 """
-import math
 from dataclasses import dataclass
 import numpy as np
 
@@ -263,25 +262,29 @@ def get_window_index_pairs_for_image(image_path: str, w_size: float):
                                                  w_size=w_size)
 
 
-def calculate_frame_reference_time(frame_duration: float,
-                                   frame_start: float,
-                                   half_life: float) -> float:
+def calculate_frame_reference_time(frame_duration: np.ndarray,
+                                   frame_start: np.ndarray,
+                                   half_life: float) -> np.ndarray:
     r"""Compute frame reference time as the time at which the average activity occurs.
     
-    Equation comes from the `DICOM standard documentation <https://dicom.innolitics.com/ciods/positron-emission-tomography-image/pet-image/00541300>`_
+    Equation comes from the `DICOM standard documentation
+    <https://dicom.innolitics.com/ciods/positron-emission-tomography-image/pet-image/00541300>`_
 
     :math:`T_{ave}=\frac{1}{\lambda}ln\frac{\lambda T}{1-e^{-\lambda T}}`
 
-    where lambda is the decay constant, :math:`\frac{ln2}{T_{1/2}}`, :math:`T_{1/2}` is the half life, and :math:`T` is the frame duration.
+    where lambda is the decay constant, :math:`\frac{ln2}{T_{1/2}}`, :math:`T_{1/2}` is the half
+    life, and :math:`T` is the frame duration.
 
     Args:
-        frame_duration (float): Frame Duration in seconds
-        frame_start (float): Start time of frame relative to scan start, in seconds
-        half_life (float): Radionuclide half life
+        frame_duration (np.ndarray): Duration of each frame in seconds.
+        frame_start (np.ndarray): Start time of each frame relative to scan start, in seconds.
+        half_life (float): Radionuclide half life in seconds.
 
     Returns: 
-        float: Frame reference time
+        np.ndarray: Frame reference time for each frame in the scan in seconds.
     """
-    decay_constant = math.log(2)/half_life
-    frame_reference_time = frame_start + math.log((decay_constant*frame_duration)/(1-math.exp(-decay_constant*frame_duration)))/decay_constant
+    decay_constant = np.log(2)/half_life
+    decay_over_frame = decay_constant*frame_duration
+    reference_time_delay = np.log((decay_over_frame)/(1-np.exp(-decay_over_frame)))/decay_constant
+    frame_reference_time = frame_start + reference_time_delay
     return frame_reference_time
