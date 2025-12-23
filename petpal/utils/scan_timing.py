@@ -204,9 +204,21 @@ class ScanTimingInfo:
         return cls.from_metadata(metadata_dict=_meta_data)
 
     @classmethod
-    def from_start_end(cls, frame_starts: np.ndarray, frame_ends: np.ndarray):
+    def from_start_end(cls,
+                       frame_starts: np.ndarray,
+                       frame_ends: np.ndarray,
+                       decay_correction_factor: np.ndarray | None=None):
         """Infer timing properties based on start and end time."""
-        frame_duration = False
+        frame_duration = frame_ends - frame_starts
+        frame_midpoint = frame_starts + frame_duration / 2
+        frame_decay = np.ones_like(frame_starts)
+        if decay_correction_factor:
+            frame_decay = decay_correction_factor
+        return cls(duration=frame_duration,
+                   start=frame_starts,
+                   end=frame_ends,
+                   center=frame_midpoint,
+                   decay=frame_decay)
 
 
 def get_window_index_pairs_from_durations(frame_durations: np.ndarray, w_size: float):
