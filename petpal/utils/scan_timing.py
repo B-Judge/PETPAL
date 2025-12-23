@@ -81,8 +81,8 @@ class ScanTimingInfo:
 
     """
     duration: np.ndarray[float]
-    end: np.ndarray[float]
     start: np.ndarray[float]
+    end: np.ndarray[float]
     center: np.ndarray[float]
     decay: np.ndarray[float]
 
