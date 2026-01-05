@@ -509,29 +509,29 @@ class TimeActivityCurve:
                                                           kind='linear',
                                                           fill_value='extrapolate')(tac.times)
             return TimeActivityCurve(tac.times, shifted_vals_on_tac_times)
-        else:
-            return shifted_tac
+        return shifted_tac
 
     @staticmethod
     def tac_dispersion(tac: 'TimeActivityCurve',
-                       disp_func: Callable[[np.ndarray, ...], np.ndarray],
+                       disp_func: Callable[[np.ndarray], np.ndarray],
                        disp_kwargs: dict,
                        num_samples: int = 4096):
         r"""
         Applies a dispersion function to a time-activity curve (TAC) and returns the convolved TAC.
 
-        This method evaluates the specified dispersion function `disp_func` at supersampled time points.
-        It performs convolution (using :func:`scipy.signal.convolve`)of the supersampled TAC with
-        the dispersion function, and the result is sampled back at the original TAC time points
-        to form the new convolved TAC.
+        This method evaluates the specified dispersion function `disp_func` at supersampled time
+        points. It performs convolution (using :func:`scipy.signal.convolve`)of the supersampled
+        TAC with the dispersion function, and the result is sampled back at the original TAC time
+        points to form the new convolved TAC.
 
         .. note::
-            We perform the supersampling to ensure that the TACs are sampled evenly before performing
-            the convolution. Convolving non-evenly sampled arrays produces nonsense values.
+            We perform the supersampling to ensure that the TACs are sampled evenly before
+            performing the convolution. Convolving non-evenly sampled arrays produces nonsense
+            values.
 
         Args:
             tac (TimeActivityCurve): The original time-activity curve to be convolved.
-            disp_func (Callable[[np.ndarray, ...], np.ndarray]):
+            disp_func (Callable[[np.ndarray], np.ndarray]):
                 The dispersion function to be applied. This function must accept an array of
                 times as its first argument, followed by any additional arguments specified
                 in `disp_kwargs`.
@@ -541,8 +541,8 @@ class TimeActivityCurve:
                 Defaults to 4096.
 
         Returns:
-            TimeActivityCurve: A new `TimeActivityCurve` instance with the convolved activity values,
-            resampled at the original TAC time points.
+            TimeActivityCurve: A new `TimeActivityCurve` instance with the convolved activity
+            values, resampled at the original TAC time points.
 
         Example:
             .. code-block:: python
@@ -591,6 +591,12 @@ class TimeActivityCurve:
         disp_tac = TimeActivityCurve(tac.times, disp_vals)
 
         return disp_tac.set_activity_non_negative()
+
+    @property
+    def contains_any_nan(self):
+        """Return True if TAC has any NaN activity values."""
+        any_nan = np.isnan(self.activity).any()
+        return any_nan
 
 def safe_load_tac(filename: str,
                   with_uncertainty: bool = False,

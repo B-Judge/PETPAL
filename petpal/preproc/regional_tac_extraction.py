@@ -395,7 +395,7 @@ class WriteRegionalTacs:
         for i,region_name in enumerate(self.region_names):
             mappings = self.region_maps[i]
             tac = self.extract_tac(region_mapping=mappings, **tac_calc_kwargs)
-            if np.isnan(tac.activity).any():
+            if tac.contains_any_nan():
                 continue
             if one_tsv_per_region:
                 tac.to_tsv(filename=f'{out_tac_dir}/{out_tac_prefix}_seg-{region_name}_tac.tsv')
