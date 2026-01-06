@@ -304,7 +304,6 @@ class Sgtm:
 
         return unique_labels, t_corrected, condition_number
 
-
     def run_sgtm_4d(self) -> np.ndarray:
         r"""Calculated partial volume corrected TACs on a 4D image by running sGTM on each frame in
         the 4D image.
@@ -339,7 +338,6 @@ class Sgtm:
 
         return np.asarray(frame_results)
 
-
     def save_results_3d(self, sgtm_result: tuple, out_tsv_path: str):
         r"""Saves the result of an sGTM calculation.
 
@@ -350,12 +348,10 @@ class Sgtm:
             sgtm_result (tuple): Output of :meth:`run_sgtm_3d`
             out_tsv_path (str): File path to which results are saved.
         """
-        sgtm_result_array = np.array([sgtm_result[0], sgtm_result[1]]).T
-        np.savetxt(out_tsv_path,sgtm_result_array,
-                   header='Region\tMean',
-                   fmt=['%.0f','%.2f'],
-                   comments='')
-
+        sgtm_result_to_write = pd.DataFrame()
+        sgtm_result_to_write['Region'] = self.unique_labels
+        sgtm_result_to_write['Mean'] = sgtm_result[1]
+        sgtm_result_to_write.to_csv(out_tsv_path,sep='\t')
 
     def save_results_4d_tacs(self,
                              sgtm_result: np.ndarray,
