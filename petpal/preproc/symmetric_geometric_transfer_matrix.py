@@ -388,7 +388,13 @@ class Sgtm:
                                   sgtm_result: np.ndarray,
                                   out_tac_dir: str,
                                   out_tac_prefix: str):
-        """Like :meth:`save_results_4d_tacs`, but saves all TACs to a single file."""
+        """Like :meth:`save_results_4d_tacs`, but saves all TACs to a single file.
+
+        Args:
+            sgtm_result (np.ndarray): Array of results from :meth:`run_sgtm_4d`
+            out_tac_dir (str): Path to folder where regional TACs will be saved.
+            out_tac_prefix (str): Prefix of the TAC files.
+        """
         os.makedirs(out_tac_dir, exist_ok=True)
         input_image_path = self.input_image_path
         scan_timing = ScanTimingInfo.from_nifti(image_path=input_image_path)
