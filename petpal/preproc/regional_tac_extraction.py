@@ -1,6 +1,7 @@
 """
 Regional TAC extraction
 """
+from warnings import warn
 import os
 from collections.abc import Callable
 import pathlib
@@ -398,7 +399,8 @@ class WriteRegionalTacs:
         Function to write Tissue Activity Curves for each region, given a segmentation,
         4D PET image, and label map. Computes the average of the PET image within each
         region. Writes TACs in TSV format with region name, frame start time, frame end time, and
-        activity and uncertainty within each region.
+        activity and uncertainty within each region. Skips writing regions without any matched
+        voxels.
 
         Args:
             out_tac_prefix (str): Prefix for the output files, usually the BIDS subject and
@@ -407,6 +409,9 @@ class WriteRegionalTacs:
             one_tsv_per_region (bool): If True, write one TSV TAC file for each region in the
                 image. If False, write one TSV file with all TACs in the image.
             **tac_calc_kwargs: Additional keywords passed onto tac_extraction_func.
+
+        Raises:
+            Warning: for each region without any matched voxels, warn user that TAC is skipped.
         """
         tacs_data = self.gen_tacs_data_frame()
 
@@ -414,6 +419,8 @@ class WriteRegionalTacs:
             mappings = self.region_maps[i]
             tac = self.extract_tac(region_mapping=mappings, **tac_calc_kwargs)
             if tac.contains_any_nan():
+                warn(f"Region {region_name} did not find matching voxels, excluding from results.")
+                tacs_data.drop([region_name,f'{region_name}_unc'],axis=1,inplace=True)
                 continue
             if one_tsv_per_region:
                 tac.to_tsv(filename=f'{out_tac_dir}/{out_tac_prefix}_seg-{region_name}_tac.tsv')
