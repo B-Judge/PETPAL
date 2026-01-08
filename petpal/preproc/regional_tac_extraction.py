@@ -346,13 +346,13 @@ class WriteRegionalTacs:
             region_name = f'UNK{label:>04}'
         return region_name
 
-    def is_empty_region(self,region_mask: np.ndarray) -> bool:
-        """Check if masked region has zero matched voxels. If so, return True, otherwise return
+    def is_empty_region(self,pet_masked_region: np.ndarray) -> bool:
+        """Check if masked PET region has zero matched voxels. If so, return True, otherwise return
         False.
         
         Args:
-            region_mask (np.ndarray): Array of PET voxels masked to a specific region."""
-        if len(region_mask)==0:
+            pet_masked_region (np.ndarray): Array of PET voxels masked to a specific region."""
+        if len(pet_masked_region)==0:
             return True
         return False
 
@@ -369,10 +369,11 @@ class WriteRegionalTacs:
         """
         region_mask = combine_regions_as_mask(segmentation_img=self.seg_arr,
                                               label=region_mapping)
-        is_region_empty = self.is_empty_region(region_mask=region_mask)
 
         pet_masked_region = apply_mask_4d(input_arr=self.pet_arr,
                                           mask_arr=region_mask)
+
+        is_region_empty = self.is_empty_region(pet_masked_region=pet_masked_region)
         if is_region_empty:
             extracted_tac = np.empty_like(self.scan_timing.center_in_mins)
             extracted_tac.fill(np.nan)
