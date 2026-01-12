@@ -351,7 +351,10 @@ class WriteRegionalTacs:
         False.
         
         Args:
-            pet_masked_region (np.ndarray): Array of PET voxels masked to a specific region."""
+            pet_masked_region (np.ndarray): Array of PET voxels masked to a specific region.
+            
+        Returns:
+            pet_masked_region_is_empty (bool): If True, input region is empty."""
         if len(pet_masked_region)==0:
             return True
         return False
