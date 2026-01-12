@@ -520,7 +520,7 @@ class TimeActivityCurve:
         Applies a dispersion function to a time-activity curve (TAC) and returns the convolved TAC.
 
         This method evaluates the specified dispersion function `disp_func` at supersampled time
-        points. It performs convolution (using :func:`scipy.signal.convolve`)of the supersampled
+        points. It performs convolution (using :func:`scipy.signal.convolve`) of the supersampled
         TAC with the dispersion function, and the result is sampled back at the original TAC time
         points to form the new convolved TAC.
 
