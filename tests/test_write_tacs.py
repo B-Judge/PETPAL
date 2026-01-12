@@ -84,7 +84,7 @@ def test_write_tacs_multitac_writes_combined_file_and_skips_nan_regions(tmp_path
     combined = out_dir / "sub-01_multitacs.tsv"
     assert combined.exists()
     txt = combined.read_text()
-    # Should contain frame_start/min and R1 column but not R2 (R2 was NaN and skipped)
+    # Should contain frame_start(min) and R1 column but not R2 (R2 was NaN and skipped)
     assert "frame_start(min)" in txt
     assert "R1" in txt
     assert "R2" not in txt
