@@ -357,7 +357,7 @@ class Sgtm:
             sgtm_result (tuple): Output of :meth:`run_sgtm_3d`
             out_tsv_path (str): File path to which results are saved.
         """
-        sgtm_result_to_write = pd.DataFrame()
+        sgtm_result_to_write = pd.DataFrame(columns=['Region','Mean'])
         sgtm_result_to_write['Region'] = self.unique_labels[1]
         sgtm_result_to_write['Mean'] = sgtm_result[1]
         sgtm_result_to_write.to_csv(out_tsv_path,sep='\t',index=False)
