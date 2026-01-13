@@ -96,7 +96,7 @@ class Sgtm:
     def save(self, output_path: str, out_tac_prefix: str | None = None, one_tsv_per_region: bool = False):
         r"""Save sGTM results by writing the resulting array to one or more files.
 
-        The behavior depends on the input iamge provided. If input image is 3D, saves the average sGTM value for each
+        The behavior depends on the input image provided. If input image is 3D, saves the average sGTM value for each
         region in a TSV with one row per region. If input image is 4D, saves time series average values for each frame
         within each region. 4D operation saves a single file unless `one_tsv_per_region` is set to True.
 
