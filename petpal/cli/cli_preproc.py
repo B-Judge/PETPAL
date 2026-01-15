@@ -364,6 +364,15 @@ def _generate_args() -> argparse.ArgumentParser:
                             required=True,
                             help='End time for SUV calculation in seconds from scan start',
                             type=float)
+
+    parser_seg_crop = subparsers.add_parser('seg-crop',help='Crop segmentation image to PET FOV')
+    _add_common_args(parser_seg_crop)
+    parser_seg_crop.add_argument('-s',
+                                 '--segmentation',
+                                 required=True,
+                                 help='Path to segmentation image',
+                                 type=str)
+
     return parser
 
 
