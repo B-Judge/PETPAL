@@ -238,7 +238,7 @@ def resample_segmentation(input_image_path: str,
 
 
 def vat_wm_ref_region(input_segmentation_path: str,
-                      out_segmentation_path: str):
+                      out_segmentation_path: str | None) -> ants.ANTsImage:
     """
     Generates the cortical white matter reference region described in O'Donnell
     JL et al. (2024).
@@ -255,6 +255,9 @@ def vat_wm_ref_region(input_segmentation_path: str,
             matter reference region is computed.
         out_segmentation_path (str): Path to which white matter reference
             region mask image is saved.
+
+    Returns:
+        wm_erode (ants.ANTsImage): Eroded white matter reference region mask image.
     """
     wm_regions = [2,41,251,252,253,254,255,77,3000,3001,3002,3003,3004,3005,
                   3006,3007,3008,3009,3010,3011,3012,3013,3014,3015,3016,3017,
@@ -281,7 +284,10 @@ def vat_wm_ref_region(input_segmentation_path: str,
     wm_csf_eroded = ants.threshold_image(image=wm_csf_blurred, low_thresh=0.95, binary=True)
     wm_erode = ants.mask_image(image=wm_merged, mask=wm_csf_eroded)
 
-    ants.image_write(image=wm_erode, filename=out_segmentation_path)
+    if out_segmentation_path is not None:
+        ants.image_write(image=wm_erode, filename=out_segmentation_path)
+    
+    return wm_erode
 
 
 def eroded_wm_segmentation(input_segmentation_path: str,
@@ -302,6 +308,7 @@ def eroded_wm_segmentation(input_segmentation_path: str,
         :meth:`~petpal.preproc.segmentation_tools.vat_wm_ref_region` - function that generates the
             eroded white matter region.
     """
+
     pass
 
 
