@@ -126,6 +126,8 @@ Examples:
     petpal-preproc warp-pet-atlas -i /path/to/input_img.nii.gz -o petpal_reg-atlas.nii.gz --anatomical /path/to/anat.nii.gz --reference-atlas /path/to/atlas.nii.gz
   - SUV:
     petpal-preproc suv -i /path/to/input_img.nii.gz -o petpal_suv.nii.gz --weight 75 --dose 250 --start-time 1200 --end-time 3600
+  - Crop segmentation image to PET FOV:
+    petpal-preproc seg-crop -i /path/to/input_img.nii.gz -o petpal_cropped_seg.nii.gz --segmentation /path/to/segmentation.nii.gz
 """
 
 
