@@ -104,7 +104,8 @@ from ..preproc import (image_operations_4d,
                        motion_corr,
                        register,
                        regional_tac_extraction,
-                       standard_uptake_value)
+                       standard_uptake_value,
+                       segmentation_tools)
 
 
 _PREPROC_EXAMPLES_ = r"""
@@ -470,6 +471,12 @@ def main():
                                       end_time=args.end_time,
                                       weight=args.weight,
                                       dose=args.dose)
+        case 'seg_crop':
+            input_img = ants.image_read(filename=args.input_img)
+            seg_img = ants.image_read(filename=args.segmentation)
+            seg_cropped = segmentation_tools.seg_crop_to_pet_fov(pet_img=input_img,
+                                                                 segmentation_img=seg_img)
+            ants.image_write(seg_cropped,args.out_img)
 
 if __name__ == "__main__":
     main()
