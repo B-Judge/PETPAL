@@ -4,6 +4,17 @@ Each step in the YAML file maps to a registered ``petpal-*`` CLI command.
 Independent steps are executed in parallel; dependent steps wait for all
 their declared dependencies to finish first.
 
+Dependency guarantee
+--------------------
+Steps are grouped into *execution levels* by Kahn's topological sort.  The
+runner processes levels one at a time.  Within each level every step runs in
+a :class:`~concurrent.futures.ThreadPoolExecutor`.  The executor's context
+manager calls ``shutdown(wait=True)`` when the ``with`` block exits, which
+blocks until **every** future in that level has completed.  The next level's
+futures are only submitted in the following loop iteration — after the
+previous ``with`` block has returned.  Therefore no step in level *N+1* can
+start before every step in level *N* has finished.
+
 Example YAML::
 
     pipeline:
@@ -35,7 +46,7 @@ import logging
 import re
 import subprocess
 import sys
-from concurrent.futures import Future, ThreadPoolExecutor, as_completed
+from concurrent.futures import Future, ThreadPoolExecutor
 from pathlib import Path
 
 import yaml
@@ -128,8 +139,9 @@ def resolve_references(pipeline: Pipeline) -> Pipeline:
 def _build_execution_levels(pipeline: Pipeline) -> list[list[PipelineStep]]:
     """Group steps into execution levels via Kahn's topological sort.
 
-    All steps within the same level are independent and can run in
-    parallel.  Levels must be executed sequentially.
+    All steps within the same level are mutually independent and can run in
+    parallel.  Levels must be executed sequentially: every step in level *N*
+    must finish before any step in level *N+1* begins.
 
     Args:
         pipeline: A resolved pipeline (call :func:`resolve_references` first).
@@ -178,8 +190,9 @@ def _build_execution_levels(pipeline: Pipeline) -> list[list[PipelineStep]]:
 def _run_step(step: PipelineStep) -> None:
     """Execute a single pipeline step as a subprocess.
 
-    The step's ``command`` and ``args`` are translated into a CLI
-    invocation: ``command --key1 value1 --key2 value2 ...``
+    Translates ``step.command`` and ``step.args`` into a CLI call::
+
+        command --key1 value1 --key2 value2 ...
 
     Args:
         step: Step to execute.
@@ -192,52 +205,78 @@ def _run_step(step: PipelineStep) -> None:
     for key, value in step.args.items():
         cmd.extend([f"--{key}", value])
 
-    logger.info("Starting step '%s': %s", step.name, " ".join(cmd))
+    logger.info("Starting  '%s': %s", step.name, " ".join(cmd))
     subprocess.run(cmd, check=True)
-    logger.info("Step '%s' completed.", step.name)
+    logger.info("Completed '%s'.", step.name)
 
 
 def run_pipeline(pipeline: Pipeline, max_workers: int = 4) -> None:
     """Execute a resolved pipeline, parallelising independent steps.
 
-    Steps are executed level-by-level (see :func:`_build_execution_levels`).
-    All steps within a level run concurrently via a thread pool.  If any
-    step fails, the error is logged and the process exits immediately with
-    code 1.
+    Dependency guarantee
+    ~~~~~~~~~~~~~~~~~~~~
+    Steps are grouped into execution levels by :func:`_build_execution_levels`.
+    Each level is run inside a :class:`~concurrent.futures.ThreadPoolExecutor`
+    ``with`` block.  Python's ``ThreadPoolExecutor.__exit__`` calls
+    ``shutdown(wait=True)``, which **blocks until every future submitted in
+    that level has finished** before the ``with`` block returns.  The next
+    level's futures are submitted only in the subsequent loop iteration —
+    after the previous ``with`` block has fully exited.  This hard barrier
+    guarantees that no step in level *N+1* can start before every step in
+    level *N* has completed.
+
+    Fail-fast behaviour
+    ~~~~~~~~~~~~~~~~~~~
+    After each level's barrier, all completed futures are inspected.  If any
+    step failed, every failure is logged and the pipeline exits with code 1
+    without submitting any further levels.
 
     Args:
         pipeline: Resolved pipeline (call :func:`resolve_references` first).
         max_workers: Maximum parallel worker threads per level.
 
     Raises:
-        SystemExit: With code 1 if any step fails.
+        SystemExit: With code 1 if one or more steps fail.
     """
     levels = _build_execution_levels(pipeline)
     n_levels = len(levels)
 
     for idx, level in enumerate(levels, start=1):
         names = [s.name for s in level]
-        logger.info("Level %d/%d — running: %s", idx, n_levels, names)
+        logger.info("Level %d/%d — submitting: %s", idx, n_levels, names)
 
-        workers = min(max_workers, len(level))
-        with ThreadPoolExecutor(max_workers=workers) as pool:
-            futures: dict[Future, PipelineStep] = {
-                pool.submit(_run_step, step): step for step in level
-            }
-            for future in as_completed(futures):
-                step = futures[future]
-                exc = future.exception()
-                if exc is not None:
-                    logger.error("Step '%s' failed: %s", step.name, exc)
-                    sys.exit(1)
+        # ------------------------------------------------------------------
+        # BARRIER
+        # Every future for this level is submitted to the pool inside the
+        # `with` block.  When the block exits, ThreadPoolExecutor calls
+        # shutdown(wait=True), which blocks here until ALL submitted futures
+        # have finished — whether they succeeded or raised an exception.
+        # The next level's steps are only submitted after this line returns.
+        # ------------------------------------------------------------------
+        step_futures: dict[Future, PipelineStep] = {}
+        with ThreadPoolExecutor(max_workers=min(max_workers, len(level))) as pool:
+            step_futures = {pool.submit(_run_step, step): step for step in level}
+        # All level-N futures are guaranteed done at this point.
+
+        failures = [
+            (step, exc)
+            for future, step in step_futures.items()
+            if (exc := future.exception()) is not None
+        ]
+        if failures:
+            for step, exc in failures:
+                logger.error("Step '%s' failed: %s", step.name, exc)
+            logger.error(
+                "%d step(s) failed at level %d/%d — downstream steps will not run.",
+                len(failures), idx, n_levels,
+            )
+            sys.exit(1)
+
+        logger.info("Level %d/%d — all steps completed.", idx, n_levels)
 
 
 def main() -> None:
-    """Entry point for the ``petpal-run`` command.
-
-    Parses a YAML pipeline file, resolves inter-step references, and
-    executes the pipeline with optional parallelism.
-    """
+    """Entry point for the ``petpal-run`` command."""
     parser = argparse.ArgumentParser(
         prog="petpal-run",
         description="Run a PETPAL pipeline defined in a YAML file.",
