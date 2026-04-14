@@ -32,7 +32,8 @@ dependencies = [
     "seaborn",
     "networkx",
     "scikit-learn",
-    "lmfit"
+    "lmfit",
+    "pyyaml",
 ]
 readme = "README.md"
 classifiers = [  # These are added to PyPI package when published; Used for searching
@@ -46,18 +47,29 @@ classifiers = [  # These are added to PyPI package when published; Used for sear
 ]
 
 [project.scripts]
-    petpal-preproc = "petpal.cli.cli_preproc:main"
-    petpal-tac-interpolate = "petpal.cli.cli_tac_interpolation:main"
-    petpal-graph-plot = "petpal.cli.cli_graphical_plots:main"
-    petpal-graph-analysis = "petpal.cli.cli_graphical_analysis:main"
-    petpal-parametric-image = "petpal.cli.cli_parametric_images:main"
-    petpal-tcm-fit = "petpal.cli.cli_tac_fitting:main"
-    petpal-rtms = "petpal.cli.cli_reference_tissue_models:main"
-    petpal-vat-proc = "petpal.cli.cli_vat_processing:main"
-    petpal-pib-proc = "petpal.cli.cli_pib_processing:main"
-    petpal-pvc = "petpal.cli.cli_pvc:main"
-    petpal-plot-tacs = "petpal.cli.cli_plot_tacs:main"
-    petpal-pet-stats = "petpal.cli.cli_stats:main"
+    # Existing analysis CLIs
+    petpal-preproc              = "petpal.cli.cli_preproc:main"
+    petpal-tac-interpolate      = "petpal.cli.cli_tac_interpolation:main"
+    petpal-graph-plot           = "petpal.cli.cli_graphical_plots:main"
+    petpal-graph-analysis       = "petpal.cli.cli_graphical_analysis:main"
+    petpal-parametric-image     = "petpal.cli.cli_parametric_images:main"
+    petpal-tcm-fit              = "petpal.cli.cli_tac_fitting:main"
+    petpal-rtms                 = "petpal.cli.cli_reference_tissue_models:main"
+    petpal-vat-proc             = "petpal.cli.cli_vat_processing:main"
+    petpal-pib-proc             = "petpal.cli.cli_pib_processing:main"
+    petpal-pvc                  = "petpal.cli.cli_pvc:main"
+    petpal-plot-tacs            = "petpal.cli.cli_plot_tacs:main"
+    petpal-pet-stats            = "petpal.cli.cli_stats:main"
+    # YAML pipeline runner
+    petpal-run                  = "petpal.pipelines.runner:main"
+    # Standalone preprocessing CLIs
+    petpal-moco                 = "petpal.cli.cli_moco:main"
+    petpal-register             = "petpal.cli.cli_register:main"
+    petpal-decay-correct        = "petpal.cli.cli_decay_correction:main"
+    petpal-suv                  = "petpal.cli.cli_suv:main"
+    petpal-write-tacs           = "petpal.cli.cli_write_tacs:main"
+    petpal-seg                  = "petpal.cli.cli_segmentation:main"
+    petpal-pca-idif             = "petpal.cli.cli_pca_idif:main"
 
 [project.urls]
     Repository = "https://github.com/PETPAL-WUSM/PETPAL.git"
