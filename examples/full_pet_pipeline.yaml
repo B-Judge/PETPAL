@@ -1,0 +1,144 @@
+# =============================================================================
+# Full PET/MR Analysis Pipeline — Example
+# =============================================================================
+#
+# Run with:
+#   petpal-run examples/full_pet_pipeline.yaml
+#   petpal-run examples/full_pet_pipeline.yaml --workers 8 --log-level DEBUG
+#
+# This file demonstrates a complete, realistic PET/MR kinetic analysis
+# workflow for a single subject.  Edit the paths under each step's ``args``
+# block to match your data layout before running.
+#
+# Execution order (enforced by ``depends_on``):
+#
+#   [1] moco  ──────────────────────────────────────────────────────►
+#   [2] register  (needs: moco) ──────────────────────────────────►
+#   [3] resample_seg  (needs: register) ──────────────────────────►
+#   [4] write_tacs  (needs: register, resample_seg) ──────────────►
+#   [5a] patlak  ─┐  (both need write_tacs only → run in parallel)
+#   [5b] logan   ─┘
+#
+# Steps at the same indentation level with the same upstream dependencies
+# are dispatched in parallel by ``petpal-run``.
+# =============================================================================
+
+pipeline:
+  name: full_pet_analysis
+
+  steps:
+
+    # -------------------------------------------------------------------------
+    # Step 1 — Motion Correction
+    # -------------------------------------------------------------------------
+    # Correct frame-to-frame subject motion in the raw 4-D PET series using a
+    # windowed registration strategy.  All subsequent steps operate on the
+    # motion-corrected image.
+    #
+    # CLI: petpal-moco windowed --pet <path> --output <path>
+    # -------------------------------------------------------------------------
+    - name: moco
+      command: petpal-moco
+      args:
+        subcommand: windowed
+        pet: /data/sub-01/pet/sub-01_trc-FDG_pet.nii.gz
+        output: /out/sub-01/moco.nii.gz
+        window-length: "10"
+        step-size: "5"
+
+    # -------------------------------------------------------------------------
+    # Step 2 — PET-to-T1 Registration
+    # -------------------------------------------------------------------------
+    # Register the motion-corrected PET series into T1 MRI anatomical space
+    # using ANTs rigid registration.
+    #
+    # ``${moco.args.output}`` is resolved at runtime to the output path
+    # declared in the moco step above.
+    #
+    # Requires: moco
+    # CLI: petpal-register to-t1 --pet <path> --reference <path> --output <path>
+    # -------------------------------------------------------------------------
+    - name: register
+      command: petpal-register
+      depends_on: [moco]
+      args:
+        subcommand: to-t1
+        pet: ${moco.args.output}
+        reference: /data/sub-01/anat/sub-01_T1w.nii.gz
+        output: /out/sub-01/reg.nii.gz
+        motion-target: mean
+        type-of-transform: DenseRigid
+
+    # -------------------------------------------------------------------------
+    # Step 3 — Resample Segmentation to PET Space
+    # -------------------------------------------------------------------------
+    # Bring the atlas parcellation (from FreeSurfer/synthseg/etc.) into the
+    # same voxel grid as the registered PET image so that regional TACs can
+    # be extracted cleanly.
+    #
+    # Requires: register
+    # CLI: petpal-seg resample --seg <path> --reference <path> --output <path>
+    # -------------------------------------------------------------------------
+    - name: resample_seg
+      command: petpal-seg
+      depends_on: [register]
+      args:
+        subcommand: resample
+        seg: /data/sub-01/anat/sub-01_dseg.nii.gz
+        reference: ${register.args.output}
+        output: /out/sub-01/seg_resampled.nii.gz
+
+    # -------------------------------------------------------------------------
+    # Step 4 — Regional TAC Extraction
+    # -------------------------------------------------------------------------
+    # Extract one time-activity curve per parcellation label from the
+    # registered PET image using the resampled segmentation mask.
+    #
+    # Requires: register, resample_seg
+    # CLI: petpal-write-tacs --pet <path> --seg <path> --output <path>
+    # -------------------------------------------------------------------------
+    - name: write_tacs
+      command: petpal-write-tacs
+      depends_on: [register, resample_seg]
+      args:
+        pet: ${register.args.output}
+        seg: ${resample_seg.args.output}
+        output: /out/sub-01/tacs.tsv
+
+    # -------------------------------------------------------------------------
+    # Step 5a — Patlak Graphical Analysis
+    # -------------------------------------------------------------------------
+    # Estimate the influx constant Ki using Patlak graphical analysis on each
+    # regional TAC.  Runs in parallel with the Logan step (both depend only
+    # on write_tacs and are mutually independent).
+    #
+    # Requires: write_tacs
+    # CLI: petpal-graph-analysis --method patlak --tac <path> --output <path>
+    # -------------------------------------------------------------------------
+    - name: patlak
+      command: petpal-graph-analysis
+      depends_on: [write_tacs]
+      args:
+        method: patlak
+        tac: ${write_tacs.args.output}
+        output: /out/sub-01/patlak_ki.nii.gz
+        t-star: "30"
+
+    # -------------------------------------------------------------------------
+    # Step 5b — Logan Graphical Analysis  (parallel with Patlak)
+    # -------------------------------------------------------------------------
+    # Estimate the distribution volume ratio using Logan graphical analysis.
+    # Dispatched at the same time as patlak because both share the same single
+    # upstream dependency (write_tacs) and neither depends on the other.
+    #
+    # Requires: write_tacs
+    # CLI: petpal-graph-analysis --method logan --tac <path> --output <path>
+    # -------------------------------------------------------------------------
+    - name: logan
+      command: petpal-graph-analysis
+      depends_on: [write_tacs]
+      args:
+        method: logan
+        tac: ${write_tacs.args.output}
+        output: /out/sub-01/logan_dvr.nii.gz
+        t-star: "30"
