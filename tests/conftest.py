@@ -37,10 +37,9 @@ from unittest.mock import MagicMock
 def _make_stub(name: str, attrs: dict | None = None) -> MagicMock:
     """Create a spec-free MagicMock that impersonates a module.
 
-    Using no ``spec`` (rather than ``spec=types.ModuleType(name)``) is
-    intentional: it allows ``from <stub> import <anything>`` to succeed,
-    which is required for modules like ``bids_validator`` that are imported
-    with explicit ``from`` imports in petpal source files.
+    Using no ``spec`` is intentional: it allows ``from <stub> import <anything>``
+    to succeed, which is required for modules imported with explicit ``from``
+    statements (e.g. ``from bids_validator import BIDSValidator``).
 
     Args:
         name: Fully-qualified module name (e.g. ``"ants"``).
@@ -96,7 +95,7 @@ def pytest_configure(config) -> None:  # noqa: ANN001
         "ants.utils",
         "ants.utils.convert_nibabel",
         "antspyx",
-        # nibabel
+        # nibabel and submodules used via explicit from-imports
         "nibabel",
         "nibabel.nifti1",
         "nibabel.nifti2",
@@ -104,6 +103,7 @@ def pytest_configure(config) -> None:  # noqa: ANN001
         "nibabel.orientations",
         "nibabel.affines",
         "nibabel.loadsave",
+        "nibabel.filebasedimages",   # from nibabel.filebasedimages import FileBasedHeader
         # SimpleITK
         "SimpleITK",
         # numba
@@ -130,9 +130,10 @@ def pytest_configure(config) -> None:  # noqa: ANN001
         "sklearn.preprocessing",
         "sklearn.pipeline",
         "sklearn.utils",
-        # lmfit
+        # lmfit and submodules used via explicit from-imports
         "lmfit",
         "lmfit.models",
+        "lmfit.minimizer",           # from lmfit.minimizer import MinimizerResult
         # docker
         "docker",
         "docker.errors",
@@ -164,6 +165,7 @@ def pytest_configure(config) -> None:  # noqa: ANN001
         ("nibabel", "orientations"),
         ("nibabel", "affines"),
         ("nibabel", "loadsave"),
+        ("nibabel", "filebasedimages"),
         ("numba", "core"),
         ("numba", "typed"),
         ("fsl", "wrappers"),
@@ -180,6 +182,7 @@ def pytest_configure(config) -> None:  # noqa: ANN001
         ("sklearn", "pipeline"),
         ("sklearn", "utils"),
         ("lmfit", "models"),
+        ("lmfit", "minimizer"),
         ("docker", "errors"),
         ("nilearn", "image"),
         ("dipy", "align"),
