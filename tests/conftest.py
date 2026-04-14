@@ -1,7 +1,7 @@
 """pytest configuration for PETPAL tests.
 
 Stubs out heavy scientific and medical-imaging dependencies (antspyx,
-nibabel, SimpleITK, numba, fsl, sklearn, etc.) into ``sys.modules``
+nibabel, SimpleITK, numba, fsl, sklearn, seaborn, etc.) into ``sys.modules``
 *before* any test file imports ``petpal``.  The top-level
 ``petpal/__init__.py`` eagerly imports every subpackage, each of which
 pulls in one or more of these packages; inserting lightweight
@@ -139,6 +139,8 @@ def pytest_configure(config) -> None:  # noqa: ANN001
         "docker.errors",
         # bids_validator
         "bids_validator",
+        # seaborn (used in petpal/visualizations/)
+        "seaborn",
         # nilearn
         "nilearn",
         "nilearn.image",
