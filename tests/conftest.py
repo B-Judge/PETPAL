@@ -13,11 +13,19 @@ Tests that exercise code genuinely requiring one of these libraries
 should be marked ``@pytest.mark.requires_ants``,
 ``@pytest.mark.requires_nibabel``, etc., and skipped when the real
 package is absent.
+
+Design note — why no ``spec``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``MagicMock(spec=types.ModuleType(name))`` restricts attribute access to the
+attributes actually present on a blank ``ModuleType`` instance.  This causes
+``from bids_validator import BIDSValidator`` (and similar ``from x import y``
+statements) to raise ``ImportError`` because ``BIDSValidator`` is not a known
+attribute of a blank module.  Using ``MagicMock()`` without a spec allows any
+attribute lookup, which is the correct behaviour for a module stub.
 """
 from __future__ import annotations
 
 import sys
-import types
 from unittest.mock import MagicMock
 
 
@@ -27,20 +35,25 @@ from unittest.mock import MagicMock
 
 
 def _make_stub(name: str, attrs: dict | None = None) -> MagicMock:
-    """Create a MagicMock that impersonates a top-level module.
+    """Create a spec-free MagicMock that impersonates a module.
+
+    Using no ``spec`` (rather than ``spec=types.ModuleType(name)``) is
+    intentional: it allows ``from <stub> import <anything>`` to succeed,
+    which is required for modules like ``bids_validator`` that are imported
+    with explicit ``from`` imports in petpal source files.
 
     Args:
         name: Fully-qualified module name (e.g. ``"ants"``).
         attrs: Optional mapping of attribute names to preset values.
 
     Returns:
-        A MagicMock configured as a module stub.
+        A spec-free MagicMock configured as a module stub.
     """
-    stub = MagicMock(spec=types.ModuleType(name))
+    stub = MagicMock()
     stub.__name__ = name
     stub.__spec__ = None
     stub.__package__ = name.split(".")[0]
-    stub.__path__ = []          # makes Python treat it as a package
+    stub.__path__ = []   # marks it as a package so sub-imports resolve
     stub.__file__ = None
     if attrs:
         for attr, val in attrs.items():
@@ -74,9 +87,6 @@ def pytest_configure(config) -> None:  # noqa: ANN001
     Called by pytest before any test module is imported, ensuring that
     ``import petpal.*`` succeeds without the real packages being present.
     """
-    # ------------------------------------------------------------------
-    # All modules that need a stub entry in sys.modules
-    # ------------------------------------------------------------------
     _STUBS: list[str] = [
         # ANTs / antspyx
         "ants",
@@ -140,10 +150,8 @@ def pytest_configure(config) -> None:  # noqa: ANN001
     for mod_name in _STUBS:
         stubs[mod_name] = _install(mod_name)
 
-    # ------------------------------------------------------------------
-    # Wire child stubs onto their parent stubs so that attribute access
-    # like ``fsl.wrappers.applywarp`` resolves without AttributeError.
-    # ------------------------------------------------------------------
+    # Wire child stubs onto their parent stubs so that attribute access like
+    # ``fsl.wrappers.applywarp`` resolves without AttributeError.
     _PARENT_CHILD: list[tuple[str, str]] = [
         ("ants", "core"),
         ("ants", "registration"),
